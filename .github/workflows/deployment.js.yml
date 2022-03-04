@@ -4,14 +4,14 @@
 name: Node.js CI
 
 on:
-  pull_request:
+  push:
     branches:
       - feature/**
   # pull_request:
     # branches: [ main ]
 
-#env:
-#  PR_NUMBER: ${{ github.event.number }}
+env:
+  PR_NUMBER: ${{ github.event.number }}
 
 jobs:
 #  build:
@@ -98,4 +98,4 @@ jobs:
 #        id: pullRequestNumber
 #        with:
 #          cmd: 'pull_number=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")'
-        run: "echo 'Pull Request Number: ${{ PR_NUMBER }}'"
+        run: "echo 'Pull Request Number: ${{ env.PR_NUMBER }}'"
