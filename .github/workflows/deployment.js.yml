@@ -11,6 +11,9 @@ on:
   # pull_request:
     # branches: [ main ]
 
+env:
+  PR_NUMBER: ${{ github.event.number }}
+
 jobs:
 #  build:
 #
@@ -96,6 +99,4 @@ jobs:
 #        id: pullRequestNumber
 #        with:
 #          cmd: 'pull_number=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")'
-        env:
-          PR_NUMBER: ${{ github.event.number }}
         run: "echo 'Pull Request Number: ${{ PR_NUMBER }}'"
