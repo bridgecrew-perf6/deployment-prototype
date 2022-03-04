@@ -1,0 +1,101 @@
+# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: Node.js CI
+
+on:
+  pull_request:
+    branches:
+      - feature/**
+  # pull_request:
+    # branches: [ main ]
+
+env:
+  PR_NUMBER: ${{ github.event.number }}
+
+jobs:
+#  build:
+#
+#    runs-on: ubuntu-latest
+#
+#    # strategy:
+#      # matrix:
+#        # node-version: [12.x, 14.x, 16.x]
+#        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+#
+#    steps:
+#    - uses: actions/checkout@v2
+#    # - name: Use Node.js ${{ matrix.node-version }}
+#    - name: Use Node.js 12.22.6
+#      uses: actions/setup-node@v2
+#      with:
+#        # node-version: ${{ matrix.node-version }}
+#        node-version: 12.22.6
+#        cache: 'npm'
+#    - name: Install NPM packages
+#      run: npm ci
+#    # - run: npm run build --if-present
+#    - name: Run lint
+#      run: npm run lint
+#    - name: Run build
+#      run: npm run build --if-present
+#
+#  test:
+#    needs:
+#      - build
+#
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#    - uses: actions/checkout@v2
+#    - name: Use Node.js 12.22.6
+#      uses: actions/setup-node@v2
+#      with:
+#        node-version: 12.22.6
+#        cache: 'npm'
+#    - name: Install NPM packages
+#      run: npm ci
+#    - name: Run tests
+#      run: npm run test
+
+  deploy:
+#    needs:
+#      - test
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: akhileshns/heroku-deploy@v3.12.12 # This is the action
+        with:
+          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+          heroku_app_name: "deployment-prototype-3"
+          heroku_email: "robert.durcansky@grow2fit.com"
+          justlogin: true
+      - run: heroku auth:whoami
+      - name: Get info about slug
+        run: 'curl -n https://api.heroku.com/apps/deployment-prototype-1/slugs/70aea1ac-f393-45db-8607-b910bf2ab4a6 -H "Accept: application/vnd.heroku+json; version=3" -o response1.json'
+#      - name: Read response1.json
+#        id: response1
+#        uses: juliangruber/read-file-action@v1
+#        with:
+#          path: ./response1.json
+#      - name: Echo response1.json
+#        run: echo "${{ steps.response1.outputs.content }}"
+#      - name: Echo stack id
+#        run: echo "${{ jq (steps.response1.outputs.content).stack.id }}"
+      - name: Extract version from response1.json
+        uses: sergeysova/jq-action@v2
+        id: stackId
+        with:
+          cmd: 'jq .stack.id response1.json -r'
+
+      - name: Show my version
+        run: 'echo "stackId ${{ steps.stackId.outputs.value }}"'
+
+      - name: Show pull request number
+#        uses: sergeysova/jq-action@v2
+#        id: pullRequestNumber
+#        with:
+#          cmd: 'pull_number=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")'
+        run: "echo 'Pull Request Number: ${{ env.PR_NUMBER }}'"
