@@ -87,12 +87,20 @@ jobs:
       - run: heroku auth:whoami
       - name: Get info about slug
         run: 'curl -n https://api.heroku.com/apps/deployment-prototype-1/slugs/70aea1ac-f393-45db-8607-b910bf2ab4a6 -H "Accept: application/vnd.heroku+json; version=3" -o response1.json'
-      - name: Read response1.json
-        id: response1
-        uses: juliangruber/read-file-action@v1
+#      - name: Read response1.json
+#        id: response1
+#        uses: juliangruber/read-file-action@v1
+#        with:
+#          path: ./response1.json
+#      - name: Echo response1.json
+#        run: echo "${{ steps.response1.outputs.content }}"
+#      - name: Echo stack id
+#        run: echo "${{ jq (steps.response1.outputs.content).stack.id }}"
+      - name: Extract version from response1.json
+        uses: sergeysova/jq-action@v2
+        id: stackId
         with:
-          path: ./response1.json
-      - name: Echo response1.json
-        run: echo "${{ steps.response1.outputs.content }}"
-      - name: Echo stack id
-        run: echo "${{ jq (steps.response1.outputs.content).stack.id }}"
+          cmd: 'jq .stack.id response1.json -r'
+
+      - name: Show my version
+        run: 'echo "stackId ${{ steps.stackId.outputs.value }}"'
