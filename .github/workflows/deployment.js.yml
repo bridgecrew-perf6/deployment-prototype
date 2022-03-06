@@ -113,4 +113,18 @@ jobs:
         run: npm run build
       - name: LS command
         run: ls -l
+      - name: create app directory in dist folter
+        run: mkdir dist/app
+      - name: LS dist folder
+        run: ls -l dist
+      - name: Copy everything to app directory
+        run: cp -a dist/deployment-prototype/. dist/app
+      - name: LS dist/app folder
+        run: ls -l dist/app
+      - name: Copy server file to apps project
+        run: cp web2.js dist/app
+      - name: Create a Slug archive
+        run: tar czfv slug.tgz dist/app
+      - name: LS command
+        run: ls -l
 
