@@ -124,31 +124,43 @@ jobs:
         run: ls -l dist/app
       - name: Copy server file to apps project
         run: cp web2.js dist/app
+      # TODO add nodejs runner and install there express
       - name: Create a Slug archive
         run: tar czfv slug.tgz dist/app
       - name: LS command
         run: ls -l
-      - name: Create new app
+      - name: Get app info
         run: |
-          curl -n -X POST https://api.heroku.com/apps \
-            -d '{"name": "deployment-prototype-${{ env.PR_NUMBER }}", "region": "ed30241c-ed8c-4bb6-9714-61953675d0b4", "stack": "heroku-20"}' \
-            -H "Content-Type: application/json" \
+          curl -n https://api.heroku.com/apps/deployment-prototype-${{ env.PR_NUMBER }} \
             -H "Accept: application/vnd.heroku+json; version=3" \
-            -o createApp-response.json
-      - name: CAT createApp-response.json file
-        run: cat createApp-response.json
-      - name: Get app id
+            -o appExists-response.json
+      - name: Parse App id from the response
         uses: sergeysova/jq-action@v2
         id: appId
         with:
-          cmd: 'jq .id createApp-response.json -r'
-
-      - name: Set app id
-#        run: 'echo "stackId ${{ steps.stackId.outputs.value }}"'
-        run: echo "APP_ID=${{ steps.stackId.outputs.value }}" >> $GITHUB_ENV
-#        run:'echo "stackId ${{ steps.stackId.outputs.value }}"
-      - name: Write APP ID
+          cmd: 'jq .id appExists-response.json -r'
+      - name: Set app id to env variable if exists
+        if: steps.appId.outputs.value != 'not_found'
+        run: |
+          echo "app exists"
+          echo "APP_ID=${{ steps.stackId.outputs.value }}" >> $GITHUB_ENV
+      - name: Output APP ID
         run: "echo 'App ID: ${{ env.APP_ID }}'"
+  #      - name: Create new app
+  #        run: |
+  #          curl -n -X POST https://api.heroku.com/apps \
+  #            -d '{"name": "deployment-prototype-${{ env.PR_NUMBER }}", "region": "ed30241c-ed8c-4bb6-9714-61953675d0b4", "stack": "heroku-20"}' \
+  #            -H "Content-Type: application/json" \
+  #            -H "Accept: application/vnd.heroku+json; version=3" \
+  #            -o createApp-response.json
+  #      - name: CAT createApp-response.json file
+  #        run: cat createApp-response.json
+  #      - name: Get app id
+  #        uses: sergeysova/jq-action@v2
+  #        id: appId
+  #        with:
+  #          cmd: 'jq .id createApp-response.json -r'
+
 #      - name: Allocate new slug for the app
 #        run: curl -X POST -H 'Content-Type: application/json' -H 'Accept: application/vnd.heroku+json; version=3' -d '{"process_types":{"web":"node-v12.22.6-linux-x64/bin/node web.js"}}' -n
 
