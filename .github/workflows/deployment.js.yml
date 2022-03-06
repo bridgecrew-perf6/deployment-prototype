@@ -172,6 +172,13 @@ jobs:
       - name: Output APP ID
         if: steps.appId.outputs.value == 'not_found'
         run: "echo 'App ID: ${{ env.APP_ID }}'"
+      - name: Add new app into pipeline
+        if: steps.appId.outputs.value == 'not_found'
+        run: |
+          curl -n -X POST https://api.heroku.com/pipeline-couplings \
+            -d '{"app": "${{ env.APP_ID }}", "pipeline": "ecfa1927-1430-420e-b492-faa4d3cb0b4f", "stage": "development"}' \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/vnd.heroku+json; version=3"
 
 #      - name: Allocate new slug for the app
 #        run: curl -X POST -H 'Content-Type: application/json' -H 'Accept: application/vnd.heroku+json; version=3' -d '{"process_types":{"web":"node-v12.22.6-linux-x64/bin/node web.js"}}' -n
