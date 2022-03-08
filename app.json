@@ -1,0 +1,9 @@
+{
+    "name": "Deployment Prototype",
+    "repository": "https://github.com/RobertG2F/deployment-prototype",
+    "buildpacks": [
+        {
+            "url": "https://github.com/hone/heroku-buildpack-noop.git"
+        }
+    ]
+}
