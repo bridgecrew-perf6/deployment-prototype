@@ -1,2 +1,2 @@
 # deployment-prototype
-Test of GitHub actions to deploy angular application to the Heroku server through github workflow
+Proof of concept of GitHub Workflow project to build the app in the GitHub and deploy built artifacts to Heroku

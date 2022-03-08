@@ -1,16 +1,9 @@
-# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
-
 name: Node.js CI
 
 on:
   pull_request:
-#    types: [ opened, synchronize, reopened, ready_for_review ]
     branches:
       - '*'
-#      - feature/**
-  # pull_request:
-    # branches: [ main ]
 
 env:
   PR_NUMBER: ${{ github.event.number }}
@@ -21,23 +14,15 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    # strategy:
-      # matrix:
-        # node-version: [12.x, 14.x, 16.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-
     steps:
     - uses: actions/checkout@v2
-    # - name: Use Node.js ${{ matrix.node-version }}
     - name: Use Node.js 12.22.6
       uses: actions/setup-node@v2
       with:
-        # node-version: ${{ matrix.node-version }}
         node-version: 12.22.6
         cache: 'npm'
     - name: Install NPM packages
       run: npm ci
-    # - run: npm run build --if-present
     - name: Run lint
       run: npm run lint
     - name: Run build
@@ -61,184 +46,173 @@ jobs:
     - name: Run tests
       run: npm run test
 
-#  deploy:
-#    needs:
-#      - test
-#
-#    runs-on: ubuntu-latest
-#
-#    steps:
-#      - uses: actions/checkout@v2
-#      - uses: akhileshns/heroku-deploy@v3.12.12 # This is the action
-#        with:
-#          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
-#          heroku_app_name: "deployment-prototype-3"
-#          heroku_email: "robert.durcansky@grow2fit.com"
-#          justlogin: true
-#      - run: heroku auth:whoami
-#      - name: Get info about slug
-#        run: 'curl -n https://api.heroku.com/apps/deployment-prototype-1/slugs/70aea1ac-f393-45db-8607-b910bf2ab4a6 -H "Accept: application/vnd.heroku+json; version=3" -o response1.json'
-#      - name: Extract version from response1.json
-#        uses: sergeysova/jq-action@v2
-#        id: stackId
-#        with:
-#          cmd: 'jq .stack.id response1.json -r'
-#
-#      - name: Show my version
-#        run: 'echo "stackId ${{ steps.stackId.outputs.value }}"'
-#
-#      - name: Show pull request number
-##        uses: sergeysova/jq-action@v2
-##        id: pullRequestNumber
-##        with:
-##          cmd: 'pull_number=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")'
-#        run: "echo 'Pull Request Number: ${{ env.PR_NUMBER }}'"
-#
-#      - name: Use Node.js 12.22.6
-#        uses: actions/setup-node@v2
-#        with:
-#          node-version: 12.22.6
-#          cache: 'npm'
-#      - name: Install NPM packages
-#        run: npm ci
-#      - name: Build the project
-#        run: npm run build
-#      - name: LS command
-#        run: ls -l
-#      - name: create app directory in dist folter
-#        run: mkdir dist/app
-#      - name: LS dist folder
-#        run: ls -l dist
-#      - name: Copy everything to app directory
-#        run: cp -a dist/deployment-prototype/. dist/app
-#      - name: LS dist/app folder
-#        run: ls -l dist/app
-#      - name: Copy server file to apps project
-#        run: cp web2.js dist/app
-#
-#      - name: Download, extract and prepare Nodejs runner
-#        run: |
-#          curl -L -O http://nodejs.org/dist/v12.22.6/node-v12.22.6-linux-x64.tar.gz
-#          tar -xf node-v12.22.6-linux-x64.tar.gz --directory dist/app
-#          echo "PWD 1"
-#          pwd
-#          cd dist/app/node-v12.22.6-linux-x64/lib/node_modules/npm
-#          echo "PWD 2"
-#          pwd
-#          cd ..
-#          cd ..
-#          cd ..
-#          cd ..
-#          cd ..
-#          cd ..
-#          echo "PWD 3"
-#          pwd
-#          cp package-server.json dist/app/package.json
-#          cd dist/app
-#          npm install
-#          cd ..
-#          cd ..
-##          npm --prefix dist/app/node-v12.22.6-linux-x64/lib/node_modules/npm install express
-##          mv node-v12.22.6-linux-x64.tar.gz dist/app
-##      - name: LS apps directory
-##        run: ls -l dist/app
-##      - name: Extract Nodejs runner
-##        run: tar -xf dist/app/node-v12.22.6-linux-x64.tar.gz --directory dist/app
-#      - name: LS apps directory
-#        run: ls -l dist/app
-#      - name: Show package json
-#        run: cat dist/app/node-v12.22.6-linux-x64/lib/node_modules/npm/package.json
-#
-#      - name: Create a Slug archive
-#        run: |
-#          ls -l
-#          cd dist
-#          ls -l
-#          tar czfv slug.tgz ./app
-#          ls -l
-#          cd ..
-#          ls -l
-#      - name: Get app info
-#        run: |
-#          curl -n https://api.heroku.com/apps/deployment-prototype-${{ env.PR_NUMBER }} \
-#            -H "Accept: application/vnd.heroku+json; version=3" \
-#            -o appExists-response.json
-#      - name: Parse App id from the response
-#        uses: sergeysova/jq-action@v2
-#        id: appId
-#        with:
-#          cmd: 'jq .id appExists-response.json -r'
-#      - name: Set app id to env variable if exists
-#        if: steps.appId.outputs.value != 'not_found'
-#        run: |
-#          echo "app exists"
-#          echo "APP_ID=${{ steps.appId.outputs.value }}" >> $GITHUB_ENV
-#      - name: Output APP ID
-#        run: "echo 'App ID: ${{ env.APP_ID }}'"
-#
-#      - name: Create new app if not exists
-#        if: steps.appId.outputs.value == 'not_found'
-#        run: |
-#          curl -n -X POST https://api.heroku.com/apps \
-#            -d '{"name": "deployment-prototype-${{ env.PR_NUMBER }}", "region": "ed30241c-ed8c-4bb6-9714-61953675d0b4", "stack": "heroku-20"}' \
-#            -H "Content-Type: application/json" \
-#            -H "Accept: application/vnd.heroku+json; version=3" \
-#            -o createApp-response.json
-#      - name: CAT createApp-response.json file
-#        if: steps.appId.outputs.value == 'not_found'
-#        run: cat createApp-response.json
-#      - name: Parse new app id
-#        if: steps.appId.outputs.value == 'not_found'
-#        uses: sergeysova/jq-action@v2
-#        id: newAppId
-#        with:
-#          cmd: 'jq .id createApp-response.json -r'
-#      - name: Set new app id to env variable
-#        if: steps.appId.outputs.value == 'not_found'
-#        run: |
-#          echo "new app created"
-#          echo "APP_ID=${{ steps.newAppId.outputs.value }}" >> $GITHUB_ENV
-#      - name: Output APP ID
-#        if: steps.appId.outputs.value == 'not_found'
-#        run: "echo 'App ID: ${{ env.APP_ID }}'"
-#      - name: Add new app into pipeline
-#        if: steps.appId.outputs.value == 'not_found'
-#        run: |
-#          curl -n -X POST https://api.heroku.com/pipeline-couplings \
-#            -d '{"app": "${{ env.APP_ID }}", "pipeline": "ecfa1927-1430-420e-b492-faa4d3cb0b4f", "stage": "development"}' \
-#            -H "Content-Type: application/json" \
-#            -H "Accept: application/vnd.heroku+json; version=3"
-#
-#      - name: Allocate new slug for the app
-#        run: |
-#          curl -X POST -H 'Content-Type: application/json' \
-#            -H 'Accept: application/vnd.heroku+json; version=3' \
-#            -d '{"process_types":{"web":"node-v12.22.6-linux-x64/bin/node web2.js"}}' \
-#            -n https://api.heroku.com/apps/deployment-prototype-${{ env.PR_NUMBER }}/slugs \
-#            -o allocateSlug-response.json
-#          cat allocateSlug-response.json
-#      - name: Parse Blob URL from the response
-#        uses: sergeysova/jq-action@v2
-#        id: blobUrl
-#        with:
-#          cmd: 'jq .blob.url allocateSlug-response.json -r'
-#      - name: Parse Slug IDL from the response
-#        uses: sergeysova/jq-action@v2
-#        id: slugId
-#        with:
-#          cmd: 'jq .id allocateSlug-response.json -r'
-#
-#      - name: upload the Slug
-#        run: |
-#          cd dist
-#          curl -X PUT -H "Content-Type:" \
-#          --data-binary @slug.tgz "${{ steps.blobUrl.outputs.value }}"
-#          cd ..
-#
-#      - name: Release the Slug
-#        run: |
-#          curl -X POST -H "Accept: application/vnd.heroku+json; version=3" \
-#            -H "Content-Type: application/json" \
-#            -d '{"slug":"${{ steps.slugId.outputs.value }}"}' \
-#            -n https://api.heroku.com/apps/deployment-prototype-${{ env.PR_NUMBER }}/releases
+  deploy:
+    needs:
+      - test
 
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: akhileshns/heroku-deploy@v3.12.12 # This is the action
+        with:
+          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+          heroku_app_name: "deployment-prototype-3"
+          heroku_email: "robert.durcansky@grow2fit.com"
+          justlogin: true
+      - run: heroku auth:whoami
+      - name: Get info about slug
+        run: 'curl -n https://api.heroku.com/apps/deployment-prototype-1/slugs/70aea1ac-f393-45db-8607-b910bf2ab4a6 -H "Accept: application/vnd.heroku+json; version=3" -o response1.json'
+      - name: Extract version from response1.json
+        uses: sergeysova/jq-action@v2
+        id: stackId
+        with:
+          cmd: 'jq .stack.id response1.json -r'
+
+      - name: Show my version
+        run: 'echo "stackId ${{ steps.stackId.outputs.value }}"'
+
+      - name: Show pull request number
+        run: "echo 'Pull Request Number: ${{ env.PR_NUMBER }}'"
+
+      - name: Use Node.js 12.22.6
+        uses: actions/setup-node@v2
+        with:
+          node-version: 12.22.6
+          cache: 'npm'
+      - name: Install NPM packages
+        run: npm ci
+      - name: Build the project
+        run: npm run build
+      - name: LS command
+        run: ls -l
+      - name: create app directory in dist folter
+        run: mkdir dist/app
+      - name: LS dist folder
+        run: ls -l dist
+      - name: Copy everything to app directory
+        run: cp -a dist/deployment-prototype/. dist/app
+      - name: LS dist/app folder
+        run: ls -l dist/app
+      - name: Copy server file to apps project
+        run: cp web2.js dist/app
+
+      - name: Download, extract and prepare Nodejs runner
+        run: |
+          curl -L -O http://nodejs.org/dist/v12.22.6/node-v12.22.6-linux-x64.tar.gz
+          tar -xf node-v12.22.6-linux-x64.tar.gz --directory dist/app
+          echo "PWD 1"
+          pwd
+          cd dist/app/node-v12.22.6-linux-x64/lib/node_modules/npm
+          echo "PWD 2"
+          pwd
+          cd ..
+          cd ..
+          cd ..
+          cd ..
+          cd ..
+          cd ..
+          echo "PWD 3"
+          pwd
+          cp package-server.json dist/app/package.json
+          cd dist/app
+          npm install
+          cd ..
+          cd ..
+      - name: LS apps directory
+        run: ls -l dist/app
+      - name: Show package json
+        run: cat dist/app/node-v12.22.6-linux-x64/lib/node_modules/npm/package.json
+
+      - name: Create a Slug archive
+        run: |
+          ls -l
+          cd dist
+          ls -l
+          tar czfv slug.tgz ./app
+          ls -l
+          cd ..
+          ls -l
+      - name: Get app info
+        run: |
+          curl -n https://api.heroku.com/apps/deployment-prototype-${{ env.PR_NUMBER }} \
+            -H "Accept: application/vnd.heroku+json; version=3" \
+            -o appExists-response.json
+      - name: Parse App id from the response
+        uses: sergeysova/jq-action@v2
+        id: appId
+        with:
+          cmd: 'jq .id appExists-response.json -r'
+      - name: Set app id to env variable if exists
+        if: steps.appId.outputs.value != 'not_found'
+        run: |
+          echo "app exists"
+          echo "APP_ID=${{ steps.appId.outputs.value }}" >> $GITHUB_ENV
+      - name: Output APP ID
+        run: "echo 'App ID: ${{ env.APP_ID }}'"
+
+      - name: Create new app if not exists
+        if: steps.appId.outputs.value == 'not_found'
+        run: |
+          curl -n -X POST https://api.heroku.com/apps \
+            -d '{"name": "deployment-prototype-${{ env.PR_NUMBER }}", "region": "ed30241c-ed8c-4bb6-9714-61953675d0b4", "stack": "heroku-20"}' \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/vnd.heroku+json; version=3" \
+            -o createApp-response.json
+      - name: CAT createApp-response.json file
+        if: steps.appId.outputs.value == 'not_found'
+        run: cat createApp-response.json
+      - name: Parse new app id
+        if: steps.appId.outputs.value == 'not_found'
+        uses: sergeysova/jq-action@v2
+        id: newAppId
+        with:
+          cmd: 'jq .id createApp-response.json -r'
+      - name: Set new app id to env variable
+        if: steps.appId.outputs.value == 'not_found'
+        run: |
+          echo "new app created"
+          echo "APP_ID=${{ steps.newAppId.outputs.value }}" >> $GITHUB_ENV
+      - name: Output APP ID
+        if: steps.appId.outputs.value == 'not_found'
+        run: "echo 'App ID: ${{ env.APP_ID }}'"
+      - name: Add new app into pipeline
+        if: steps.appId.outputs.value == 'not_found'
+        run: |
+          curl -n -X POST https://api.heroku.com/pipeline-couplings \
+            -d '{"app": "${{ env.APP_ID }}", "pipeline": "ecfa1927-1430-420e-b492-faa4d3cb0b4f", "stage": "development"}' \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/vnd.heroku+json; version=3"
+
+      - name: Allocate new slug for the app
+        run: |
+          curl -X POST -H 'Content-Type: application/json' \
+            -H 'Accept: application/vnd.heroku+json; version=3' \
+            -d '{"process_types":{"web":"node-v12.22.6-linux-x64/bin/node web2.js"}}' \
+            -n https://api.heroku.com/apps/deployment-prototype-${{ env.PR_NUMBER }}/slugs \
+            -o allocateSlug-response.json
+          cat allocateSlug-response.json
+      - name: Parse Blob URL from the response
+        uses: sergeysova/jq-action@v2
+        id: blobUrl
+        with:
+          cmd: 'jq .blob.url allocateSlug-response.json -r'
+      - name: Parse Slug IDL from the response
+        uses: sergeysova/jq-action@v2
+        id: slugId
+        with:
+          cmd: 'jq .id allocateSlug-response.json -r'
+
+      - name: upload the Slug
+        run: |
+          cd dist
+          curl -X PUT -H "Content-Type:" \
+          --data-binary @slug.tgz "${{ steps.blobUrl.outputs.value }}"
+          cd ..
+
+      - name: Release the Slug
+        run: |
+          curl -X POST -H "Accept: application/vnd.heroku+json; version=3" \
+            -H "Content-Type: application/json" \
+            -d '{"slug":"${{ steps.slugId.outputs.value }}"}' \
+            -n https://api.heroku.com/apps/deployment-prototype-${{ env.PR_NUMBER }}/releases
