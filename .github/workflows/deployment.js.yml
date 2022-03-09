@@ -7,6 +7,7 @@ on:
 
 env:
   PR_NUMBER: ${{ github.event.number }}
+  BRANCH_NAME: ''
   APP_ID: ''
 
 jobs:
@@ -45,6 +46,13 @@ jobs:
       run: npm ci
     - name: Run tests
       run: npm run test
+    - name: Get Branch Name
+      id: branch-name
+      uses: tj-actions/branch-names@v5.1
+    - name: Set branch name
+      run: echo "BRANCH_NAME=${{ steps.branch-name.outputs.current_branch }}" >> $GITHUB_ENV
+    - name: Show branch name
+      run: "echo 'Branch name: ${{ env.BRANCH_NAME }}'"
 
 #  revapp:
 #    needs:
@@ -57,8 +65,8 @@ jobs:
 #        run: |
 #          curl -n -X POST https://api.heroku.com/review-apps \
 #            -d '{
-#            "branch": "feature/update-workflow",
-#            "pr_number": ${{ github.event.number }},
+#            "branch": "review-feature/update-workflow",
+#            "pr_number": ${{ env.PR_NUMBER }},
 #            "pipeline": "ecfa1927-1430-420e-b492-faa4d3cb0b4f",
 #            "source_blob": {
 #              "url": "https://github.com/RobertG2F/deployment-prototype/tarball/feature/minimal-build",
