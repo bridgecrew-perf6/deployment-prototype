@@ -46,54 +46,95 @@ jobs:
       run: npm ci
     - name: Run tests
       run: npm run test
-    - name: Get Branch Name
-      id: branch-name
-      uses: tj-actions/branch-names@v5.1
-    - name: Set branch name
-      run: echo "BRANCH_NAME=${{ steps.branch-name.outputs.current_branch }}" >> $GITHUB_ENV
-    - name: Show branch name
-      run: "echo 'Branch name: ${{ env.BRANCH_NAME }}'"
 
-#  revapp:
-#    needs:
-#      - test
-#
-#    runs-on: ubuntu-latest
-#
-#    steps:
-#      - name: asd
-#        run: |
-#          curl -n -X POST https://api.heroku.com/review-apps \
-#            -d '{
-#            "branch": "review-feature/update-workflow",
-#            "pr_number": ${{ env.PR_NUMBER }},
-#            "pipeline": "ecfa1927-1430-420e-b492-faa4d3cb0b4f",
-#            "source_blob": {
-#              "url": "https://github.com/RobertG2F/deployment-prototype/tarball/feature/minimal-build",
-#              "version": "v1.0.0"
-#            }
-#            }' \
-#            -H "Content-Type: application/json" \
-#            -H "Accept: application/vnd.heroku+json; version=3"
-#
+  deploy:
+    needs:
+      - test
 
+    runs-on: ubuntu-latest
 
+    steps:
+      - uses: actions/checkout@v2
+      - name: Login to the Heroku
+        uses: akhileshns/heroku-deploy@v3.12.12 # This is the action
+        with:
+          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+          heroku_app_name: "deployment-prototype-3"
+          heroku_email: "robert.durcansky@grow2fit.com"
+          justlogin: true
+      - run: heroku auth:whoami
 
-#  deploy:
-#    needs:
-#      - test
-#
-#    runs-on: ubuntu-latest
-#
-#    steps:
-#      - uses: actions/checkout@v2
-#      - uses: akhileshns/heroku-deploy@v3.12.12 # This is the action
-#        with:
-#          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
-#          heroku_app_name: "deployment-prototype-3"
-#          heroku_email: "robert.durcansky@grow2fit.com"
-#          justlogin: true
-#      - run: heroku auth:whoami
+      - name: Get pull request branch name
+        id: branch-name
+        uses: tj-actions/branch-names@v5.1
+      - name: Set branch name
+        run: echo "BRANCH_NAME=${{ steps.branch-name.outputs.current_branch }}" >> $GITHUB_ENV
+      - name: Show branch name
+        run: "echo 'Branch name: ${{ env.BRANCH_NAME }}'"
+
+      - name: Create Review App in Heroku
+        run: |
+          curl -n -X POST https://api.heroku.com/review-apps \
+            -d '{
+            "branch": "review-${{ env.BRANCH_NAME }}",
+            "pr_number": ${{ env.PR_NUMBER }},
+            "pipeline": "ecfa1927-1430-420e-b492-faa4d3cb0b4f",
+            "source_blob": {
+              "url": "https://github.com/RobertG2F/deployment-prototype/tarball/feature/minimal-build",
+              "version": "v1.0.0"
+            }
+            }' \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/vnd.heroku+json; version=3" \
+            -o create-review-app-response.json
+      - name: Parse review app ID from the response
+        uses: sergeysova/jq-action@v2
+        id: newReviewAppId
+        with:
+          cmd: 'jq .id create-review-app-response.json -r'
+
+      - name: Set new review app id
+        if: steps.newReviewAppId.outputs.value != 'conflict'
+        run: echo "APP_ID=${{ steps.newReviewAppId.outputs.value }}" >> $GITHUB_ENV
+      - name: Show APP_ID
+        run: "echo 'Pull Request Number: ${{ env.APP_ID }}'"
+
+      - name: Get existing review apps
+        if: steps.newReviewAppId.outputs.value == 'conflict'
+        run: |
+          curl -n https://api.heroku.com/pipelines/ecfa1927-1430-420e-b492-faa4d3cb0b4f/review-apps \
+            -H "Accept: application/vnd.heroku+json; version=3" \
+            -o review-apps-list-response.json
+      - name: Find review app for the pull request
+        if: steps.newReviewAppId.outputs.value == 'conflict'
+        uses: sergeysova/jq-action@v2
+        id: reviewApps
+        with:
+          cmd: 'jq .[] review-apps-list-response.json -r'
+      - name: Save reviewApps into json file
+        run: echo ${{ steps.reviewApps.outputs.value }} -o blabla.json
+      - run: cat blabla.json
+      - run: 'echo "reviewApps ${{ steps.reviewApps.outputs.value }}"'
+      - name: Get review app
+        if: steps.newReviewAppId.outputs.value == 'conflict'
+        uses: sergeysova/jq-action@v2
+        id: reviewApp
+        with:
+          cmd: 'jq select(.branch== "review-feature/update-workflow") ${{ steps.reviewAppId.outputs.value }}'
+      - run: 'echo "reviewApp ${{ steps.reviewApp.outputs.value }}"'
+      - name: Get review app ID
+        if: steps.newReviewAppId.outputs.value == 'conflict'
+        uses: sergeysova/jq-action@v2
+        id: reviewAppId
+        with:
+          cmd: 'jq .id ${{ steps.reviewApp.outputs.value }}'
+      - run: 'echo "reviewAppId ${{ steps.reviewAppId.outputs.value }}"'
+      - name: Set existing review app id
+        if: steps.newReviewAppId.outputs.value == 'conflict'
+        run: echo "APP_ID=${{ steps.reviewAppId.outputs.value }}" >> $GITHUB_ENV
+      - name: Show APP ID
+        run: "echo 'App ID: ${{ env.APP_ID }}'"
+
 #      - name: Get info about slug
 #        run: 'curl -n https://api.heroku.com/apps/deployment-prototype-1/slugs/70aea1ac-f393-45db-8607-b910bf2ab4a6 -H "Accept: application/vnd.heroku+json; version=3" -o response1.json'
 #      - name: Extract version from response1.json
@@ -113,20 +154,28 @@ jobs:
 #        with:
 #          node-version: 12.22.6
 #          cache: 'npm'
+#
 #      - name: Install NPM packages
 #        run: npm ci
+#
 #      - name: Build the project
 #        run: npm run build
+#
 #      - name: LS command
 #        run: ls -l
-#      - name: create app directory in dist folter
+#
+#      - name: Create app directory in dist folter
 #        run: mkdir dist/app
+#
 #      - name: LS dist folder
 #        run: ls -l dist
+#
 #      - name: Copy everything to app directory
 #        run: cp -a dist/deployment-prototype/. dist/app
+#
 #      - name: LS dist/app folder
 #        run: ls -l dist/app
+#
 #      - name: Copy server file to apps project
 #        run: cp web2.js dist/app
 #
@@ -166,24 +215,8 @@ jobs:
 #          ls -l
 #          cd ..
 #          ls -l
-#      - name: Get app info
-#        run: |
-#          curl -n https://api.heroku.com/apps/deployment-prototype-${{ env.PR_NUMBER }} \
-#            -H "Accept: application/vnd.heroku+json; version=3" \
-#            -o appExists-response.json
-#      - name: Parse App id from the response
-#        uses: sergeysova/jq-action@v2
-#        id: appId
-#        with:
-#          cmd: 'jq .id appExists-response.json -r'
-#      - name: Set app id to env variable if exists
-#        if: steps.appId.outputs.value != 'not_found'
-#        run: |
-#          echo "app exists"
-#          echo "APP_ID=${{ steps.appId.outputs.value }}" >> $GITHUB_ENV
-#      - name: Output APP ID
-#        run: "echo 'App ID: ${{ env.APP_ID }}'"
-#
+
+       # TODO Deprecated Code that was creating Heroku App and adding in to the Heroku Pipeline
 #      - name: Create new app if not exists
 #        if: steps.appId.outputs.value == 'not_found'
 #        run: |
@@ -216,7 +249,8 @@ jobs:
 #            -d '{"app": "${{ env.APP_ID }}", "pipeline": "ecfa1927-1430-420e-b492-faa4d3cb0b4f", "stage": "development"}' \
 #            -H "Content-Type: application/json" \
 #            -H "Accept: application/vnd.heroku+json; version=3"
-#
+
+      # TODO uncomment this
 #      - name: Allocate new slug for the app
 #        run: |
 #          curl -X POST -H 'Content-Type: application/json' \
